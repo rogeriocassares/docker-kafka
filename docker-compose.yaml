@@ -2,8 +2,9 @@ version: '3.3'
 
 services:
 
-  zookeeper:
-    container_name: zookeeper
+  quay-zookeeper:
+    container_name: quay-zookeeper
+    restart: always
     image: quay.io/strimzi/kafka:0.28.0-kafka-3.1.0
     command: [
         "sh", "-c",
@@ -14,22 +15,28 @@ services:
     environment:
       LOG_DIR: /tmp/logs
 
-  kafka:
-    container_name: kafka
+  quay-kafka:
+    container_name: quay-kafka
+    restart: always
     image: quay.io/strimzi/kafka:0.28.0-kafka-3.1.0
     command: [
       "sh", "-c",
       "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
     ]
     depends_on:
-    - zookeeper
+    - quay-zookeeper
     ports:
     - "9092:9092"
     environment:
       LOG_DIR: "/tmp/logs"
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LOG4J_LOGGERS: "kafka.controller=WARN,kafka.foo.bar=DEBUG"
-      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: WARN
+      KAFKA_ZOOKEEPER_CONNECT: quay-zookeeper:2181
+
+  gateway-mqtt:
+    container_name: gateway-mqtt
+    restart: always
+    image: rogeriocassares/gateway-mqtt:0.1
+    depends_on:
+    - quay-kafka
+
